@@ -5,7 +5,9 @@
 
 
 class AgentService():
-    pass
+    
+    async def classify_input():
+        pass
 
 
     # repository = AgentRepository()  # Uncomment and implement as needed
