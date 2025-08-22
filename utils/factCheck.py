@@ -29,9 +29,9 @@ def parse_factcheck_response(response):
             })
 
     return results
+    
 
-
-def fact_check(claim_text: str, language: str = "en") -> dict:
+def fact_check_api(claim_text: str, language: str = "en"):
     api_key = os.getenv("GOOGLE_FACTCHECK_API_KEY")
     if not api_key:
         raise RuntimeError(
@@ -54,6 +54,12 @@ def fact_check(claim_text: str, language: str = "en") -> dict:
 
     return resp.json()
 
+def fact_check(claim_text: str, language: str = "en"):
+    data = fact_check_api(claim, language)
+    parsed = parse_factcheck_response(data)
+    return parsed
+
+
 if __name__ == "__main__":
     # accept claim from CLI args, or prompt if none provided
     claim = " ".join(sys.argv[1:]).strip()
@@ -65,8 +71,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     try:
-        data = fact_check(claim)
-        parsed = parse_factcheck_response(data)
+        parsed = fact_check(claim)
         print(json.dumps(parsed, indent=2, ensure_ascii=False))
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
