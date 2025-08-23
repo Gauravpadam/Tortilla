@@ -1,6 +1,6 @@
 from typing import Annotated
 from portia import tool
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, BertForSequenceClassification, BertTokenizer
 import torch
 from transformers import pipeline
 
@@ -39,6 +39,29 @@ def ml_detect_fraud(
     return scam_prediction[0]
 
 
+@tool
+def ml_is_phishing_url(
+    url: Annotated[str, "The URL to check for a phishing attempt."]
+) -> bool:
+    """Analyzes a URL using a machine learning model to determine if it is a phishing link."""
+    
+    model_name = "Gauravpadamtoo/bert-phishing-detector"
+    tokenizer = BertTokenizer.from_pretrained(model_name)
+    model = BertForSequenceClassification.from_pretrained(model_name)
+    model.eval()
+    
+    # Tokenize the input URL
+    inputs = tokenizer(url, return_tensors="pt", truncation=True, padding='max_length', max_length=512)
+    
+    with torch.no_grad():
+        outputs = model(**inputs)
+        logits = outputs.logits
+        # Get the predicted class (0 for phishing, 1 for legitimate)
+        prediction = torch.argmax(logits, dim=1).item()
+    
+    # Return True if the prediction is '0' (phishing), False otherwise
+    return prediction == 0
+
 # def fraud_detection(text:str):
 #     model_id = "austinb/fraud_text_detection"
 #     classifier = pipeline("text-classification", model=model_id)
@@ -55,7 +78,9 @@ def ml_detect_fraud(
 # -----------------------
 # Example usage
 # -----------------------
-if __name__ == "__main__":
-    pass
+
+# if __name__ == "__main__":
+#     pass
+
     # print(ml_pred_fake_news("Covid-19 is caused by 5G"))
     # print(fraud_detection("Your account has been successfully updated. No action is required from your side."))
