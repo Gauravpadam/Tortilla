@@ -1,13 +1,17 @@
 
 # from src.DTO.Agent import AgentCredentials  # Uncomment and implement as needed
 # from src.repository.AgentRepository import AgentRepository  # Uncomment and implement as needed
-
+from utils.lmStudioHelper import classify_fact_check
+from utils.helper import extract_fact_check_final
 
 
 class AgentService():
     
-    async def classify_input():
-        pass
+    async def classify_input(self, feedback):
+        classification = classify_fact_check(feedback)
+        response = await extract_fact_check_final(classification)
+        print(response)
+        return response
 
 
     # repository = AgentRepository()  # Uncomment and implement as needed

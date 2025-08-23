@@ -4,6 +4,8 @@ import sys
 import json
 import requests
 from dotenv import load_dotenv
+from typing import Annotated
+from portia import tool
 load_dotenv()
 
 BASE_URL = "https://factchecktools.googleapis.com/v1alpha1/claims:search"
@@ -32,7 +34,7 @@ def parse_factcheck_response(response):
     
 
 def fact_check_api(claim_text: str, language: str = "en"):
-    api_key = os.getenv("GOOGLE_FACTCHECK_API_KEY")
+    api_key = "AIzaSyCal2Sr6BGCzOisV9WBSqK1jYWih2ZMoJA"
     if not api_key:
         raise RuntimeError(
             "Missing API key. Set env var GOOGLE_FACTCHECK_API_KEY to your Google API key."
@@ -58,6 +60,20 @@ def fact_check(claim_text: str, language: str = "en"):
     data = fact_check_api(claim, language)
     parsed = parse_factcheck_response(data)
     return parsed
+
+@tool
+def fact_check_tool(
+    claim_text: Annotated[str, "The factual claim text to check."],
+    language: Annotated[str, "Language code (e.g., 'en') for the search."] = "en"
+) -> list[dict]:
+    """
+    Perform fact-checking on the provided claim using Google's Fact Check Tools API.
+    Returns a list of matching claim-review entries with publisher and rating info.
+    """
+    print("Entered fact check tool", claim_text)
+    data = fact_check_api(claim_text, language)
+    print("Completed",data)
+    return parse_factcheck_response(data)
 
 
 if __name__ == "__main__":

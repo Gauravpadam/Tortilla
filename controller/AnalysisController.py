@@ -1,6 +1,9 @@
 
 from controller.base import BaseController
 from service.AgentService import AgentService  # Uncomment and implement later
+from utils.helper import extract_fact_check_final
+from utils.lmStudioHelper import classify_fact_check
+from utils.portiaFile import portiaSample
 
 
 class AnalysisController(BaseController):
@@ -16,7 +19,11 @@ class AnalysisController(BaseController):
 
 
     async def classify_truth(self):
-        return await self.agentService.classify_input("foo")
+        res = await portiaSample()
+        # feedback="Mostly false"
+        # classification = await classify_fact_check(feedback=feedback)
+        # response = await extract_fact_check_final(classification)
+        return res
 
 
     # Define async methods to coordinate with AgentService here
