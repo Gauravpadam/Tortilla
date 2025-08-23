@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content Verifier Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .claim {
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        .claim h3 {
+            margin-top: 0;
+            color: #007bff;
+        }
+        .factual {
+            border-left-color: #28a745;
+        }
+        .factual h3 {
+            color: #28a745;
+        }
+        .misleading {
+            border-left-color: #ffc107;
+        }
+        .misleading h3 {
+            color: #ffc107;
+        }
+        .false {
+            border-left-color: #dc3545;
+        }
+        .false h3 {
+            color: #dc3545;
+        }
+        .stats {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .media-section {
+            margin: 30px 0;
+        }
+        .media-item {
+            display: inline-block;
+            margin: 10px;
+            text-align: center;
+        }
+        .media-item img {
+            width: 150px;
+            height: 100px;
+            background: #ddd;
+            border-radius: 5px;
+        }
+        .instructions {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Content Verifier Extension Test Page</h1>
+    
+    <div class="instructions">
+        <h3>Testing Instructions:</h3>
+        <ol>
+            <li>Load this page with the Content Verifier extension installed</li>
+            <li>Watch for verification badges to appear near claims</li>
+            <li>Check the sidebar for overall verification results</li>
+            <li>Look for inline badges showing TRUE/FALSE/MISLEADING verdicts</li>
+        </ol>
+    </div>
+
+    <div class="stats">
+        <h3>Page Statistics</h3>
+        <p><strong>Claims Found:</strong> 8</p>
+        <p><strong>Media Items:</strong> 3</p>
+        <p><strong>Content Type:</strong> News Article</p>
+    </div>
+
+    <article>
+        <h2>Breaking News: Scientific Discovery Claims</h2>
+        
+        <div class="claim factual">
+            <h3>Factual Claim</h3>
+            <p>Scientists at MIT announced that they have discovered a new method for renewable energy production that claims to be 50% more efficient than current solar panels.</p>
+        </div>
+
+        <div class="claim misleading">
+            <h3>Misleading Statement</h3>
+            <p>According to sources, this new technology will completely replace all fossil fuels within the next 5 years, according to experts who believe this is the solution to climate change.</p>
+        </div>
+
+        <div class="claim false">
+            <h3>False Claim</h3>
+            <p>This breakthrough was funded by a secret government program that has been hiding advanced technology from the public for decades.</p>
+        </div>
+
+        <div class="claim factual">
+            <h3>Statistical Claim</h3>
+            <p>The research team reported that their tests showed a 47.3% improvement in efficiency compared to traditional photovoltaic cells.</p>
+        </div>
+
+        <div class="claim misleading">
+            <h3>Attribution Claim</h3>
+            <p>Multiple sources say that this technology has already been implemented in several countries, though official confirmation is pending.</p>
+        </div>
+
+        <div class="claim factual">
+            <h3>Temporal Claim</h3>
+            <p>The research paper was published yesterday in the prestigious journal Nature, marking a significant milestone in renewable energy research.</p>
+        </div>
+
+        <div class="claim false">
+            <h3>Conspiracy Claim</h3>
+            <p>Big Oil companies are actively suppressing this technology because it would destroy their profits, according to anonymous whistleblowers.</p>
+        </div>
+
+        <div class="claim factual">
+            <h3>Expert Opinion</h3>
+            <p>Dr. Sarah Johnson, a leading researcher in renewable energy at Stanford University, stated that "this represents a genuine breakthrough in the field."</p>
+        </div>
+    </article>
+
+    <div class="media-section">
+        <h3>Media Content</h3>
+        <div class="media-item">
+            <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTUwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzAwN2JmZiIvPjx0ZXh0IHg9Ijc1IiB5PSI1NSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+SW1hZ2UgMTwvdGV4dD48L3N2Zz4=" alt="Research Lab Image">
+            <p>Research Laboratory</p>
+        </div>
+        <div class="media-item">
+            <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTUwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzI4YTc0NSIvPjx0ZXh0IHg9Ijc1IiB5PSI1NSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+U29sYXIgUGFuZWw8L3RleHQ+PC9zdmc+" alt="Solar Panel">
+            <p>Solar Panel Technology</p>
+        </div>
+        <div class="media-item">
+            <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTUwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2ZmYzEwNyIvPjx0ZXh0IHg9Ijc1IiB5PSI1NSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSIjMjEyNTI5IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5DaGFydDwvdGV4dD48L3N2Zz4=" alt="Data Chart">
+            <p>Efficiency Data</p>
+        </div>
+    </div>
+
+    <div class="instructions">
+        <h3>Expected Extension Behavior:</h3>
+        <ul>
+            <li>🔍 Content extraction should begin automatically</li>
+            <li>📊 Claims should be identified and processed</li>
+            <li>🏷️ Verification badges should appear near claims</li>
+            <li>📱 Sidebar should show overall verification results</li>
+            <li>⚠️ Different colors should indicate different verdict types</li>
+        </ul>
+    </div>
+
+    <script>
+        // Simulate some dynamic content loading
+        setTimeout(() => {
+            const newClaim = document.createElement('div');
+            newClaim.className = 'claim factual';
+            newClaim.innerHTML = `
+                <h3>Dynamic Claim</h3>
+                <p>This claim was added dynamically after page load to test the extension's DOM monitoring capabilities.</p>
+            `;
+            document.querySelector('article').appendChild(newClaim);
+        }, 3000);
+
+        // Add some structured data for testing
+        const structuredData = {
+            "@context": "https://schema.org",
+            "@type": "NewsArticle",
+            "headline": "Breaking News: Scientific Discovery Claims",
+            "author": {
+                "@type": "Organization",
+                "name": "Test News Organization"
+            },
+            "datePublished": "2024-01-15",
+            "dateModified": "2024-01-15"
+        };
+
+        const script = document.createElement('script');
+        script.type = 'application/ld+json';
+        script.textContent = JSON.stringify(structuredData);
+        document.head.appendChild(script);
+    </script>
+</body>
+</html>

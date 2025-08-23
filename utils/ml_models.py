@@ -62,7 +62,6 @@ def ml_is_phishing_url(
     # Return True if the prediction is '0' (phishing), False otherwise
     return prediction == 0
 
-
 # def fraud_detection(text:str):
 #     model_id = "austinb/fraud_text_detection"
 #     classifier = pipeline("text-classification", model=model_id)
@@ -79,7 +78,9 @@ def ml_is_phishing_url(
 # -----------------------
 # Example usage
 # -----------------------
+
 # if __name__ == "__main__":
 #     pass
+
     # print(ml_pred_fake_news("Covid-19 is caused by 5G"))
     # print(fraud_detection("Your account has been successfully updated. No action is required from your side."))
