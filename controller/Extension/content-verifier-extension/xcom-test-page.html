@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X.com Test Page - Content Verifier Extension</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            color: #e7e9ea;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: #1d9bf0;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            border-radius: 10px;
+        }
+        .tweet {
+            background: #16181c;
+            border: 1px solid #2f3336;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            transition: background-color 0.2s;
+        }
+        .tweet:hover {
+            background: #1c1f23;
+        }
+        .tweet-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #1d9bf0;
+            margin-right: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        .user-info {
+            flex: 1;
+        }
+        .username {
+            font-weight: bold;
+            color: #e7e9ea;
+        }
+        .handle {
+            color: #71767b;
+            margin-left: 4px;
+        }
+        .timestamp {
+            color: #71767b;
+            font-size: 14px;
+        }
+        .tweet-content {
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+        .tweet-actions {
+            display: flex;
+            justify-content: space-between;
+            max-width: 300px;
+            color: #71767b;
+            font-size: 14px;
+        }
+        .action {
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 20px;
+            transition: background-color 0.2s;
+        }
+        .action:hover {
+            background: rgba(29, 155, 240, 0.1);
+        }
+        .load-more {
+            background: #1d9bf0;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 20px;
+            cursor: pointer;
+            width: 100%;
+            margin: 20px 0;
+            font-size: 16px;
+        }
+        .load-more:hover {
+            background: #1a8cd8;
+        }
+        .stats {
+            background: #16181c;
+            border: 1px solid #2f3336;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        .stats h3 {
+            margin-top: 0;
+            color: #1d9bf0;
+        }
+        .instructions {
+            background: #0d4f3c;
+            border: 1px solid #00ba7c;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        .instructions h3 {
+            color: #00ba7c;
+            margin-top: 0;
+        }
+        #scrollIndicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #1d9bf0;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div id="scrollIndicator">Scroll: 0px</div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>🐦 X.com Test Page</h1>
+            <p>Testing X.com Data Interceptor Extension</p>
+        </div>
+
+        <div class="instructions">
+            <h3>🧪 Testing Instructions</h3>
+            <ul>
+                <li>Load this page with the Content Verifier extension installed</li>
+                <li>Open browser console to see interceptor logs</li>
+                <li>Scroll down to trigger simulated API calls</li>
+                <li>Click "Load More Tweets" to simulate GraphQL requests</li>
+                <li>Check Downloads folder for saved X.com data files</li>
+            </ul>
+        </div>
+
+        <div class="stats">
+            <h3>📊 Simulation Stats</h3>
+            <p><strong>API Calls Made:</strong> <span id="apiCallCount">0</span></p>
+            <p><strong>Tweets Generated:</strong> <span id="tweetCount">0</span></p>
+            <p><strong>Scroll Events:</strong> <span id="scrollCount">0</span></p>
+            <p><strong>Data Intercepted:</strong> <span id="dataIntercepted">No</span></p>
+        </div>
+
+        <div id="timeline">
+            <!-- Tweets will be dynamically generated here -->
+        </div>
+
+        <button class="load-more" onclick="loadMoreTweets()">Load More Tweets</button>
+    </div>
+
+    <script>
+        let apiCallCount = 0;
+        let tweetCount = 0;
+        let scrollCount = 0;
+        let lastScrollY = 0;
+
+        // Sample tweet data
+        const sampleTweets = [
+            {
+                username: "TechNews",
+                handle: "@technews",
+                content: "Breaking: New AI breakthrough announced by researchers at MIT. The technology claims to improve efficiency by 300% compared to current methods.",
+                timestamp: "2h",
+                retweets: 245,
+                likes: 892,
+                replies: 67
+            },
+            {
+                username: "DataScientist",
+                handle: "@datascience_pro",
+                content: "According to recent studies, 85% of companies are now using AI for content verification. This represents a significant shift in the industry.",
+                timestamp: "4h",
+                retweets: 156,
+                likes: 423,
+                replies: 89
+            },
+            {
+                username: "NewsVerifier",
+                handle: "@newsverify",
+                content: "Fact-check: The claim about renewable energy being 50% more efficient has been verified by multiple independent sources.",
+                timestamp: "6h",
+                retweets: 78,
+                likes: 234,
+                replies: 23
+            },
+            {
+                username: "TechReporter",
+                handle: "@techreporter",
+                content: "EXCLUSIVE: Sources say that major tech companies are secretly developing advanced content verification systems.",
+                timestamp: "8h",
+                retweets: 312,
+                likes: 567,
+                replies: 145
+            },
+            {
+                username: "AIResearcher",
+                handle: "@ai_research",
+                content: "Our latest paper on automated fact-checking shows promising results with 94% accuracy in detecting misinformation.",
+                timestamp: "12h",
+                retweets: 89,
+                likes: 345,
+                replies: 56
+            }
+        ];
+
+        // Initialize with some tweets
+        function initializeTweets() {
+            const timeline = document.getElementById('timeline');
+            sampleTweets.forEach((tweet, index) => {
+                const tweetElement = createTweetElement(tweet, index);
+                timeline.appendChild(tweetElement);
+                tweetCount++;
+            });
+            updateStats();
+        }
+
+        function createTweetElement(tweet, index) {
+            const tweetDiv = document.createElement('div');
+            tweetDiv.className = 'tweet';
+            tweetDiv.setAttribute('data-testid', 'tweet');
+            tweetDiv.innerHTML = `
+                <div class="tweet-header">
+                    <div class="avatar">${tweet.username.charAt(0)}</div>
+                    <div class="user-info">
+                        <span class="username">${tweet.username}</span>
+                        <span class="handle">${tweet.handle}</span>
+                        <span class="timestamp"> · ${tweet.timestamp}</span>
+                    </div>
+                </div>
+                <div class="tweet-content">${tweet.content}</div>
+                <div class="tweet-actions">
+                    <div class="action">💬 ${tweet.replies}</div>
+                    <div class="action">🔄 ${tweet.retweets}</div>
+                    <div class="action">❤️ ${tweet.likes}</div>
+                    <div class="action">📤</div>
+                </div>
+            `;
+            return tweetDiv;
+        }
+
+        function loadMoreTweets() {
+            // Simulate GraphQL API call
+            simulateGraphQLCall();
+            
+            // Generate new tweets
+            const timeline = document.getElementById('timeline');
+            const newTweets = generateRandomTweets(5);
+            
+            newTweets.forEach(tweet => {
+                const tweetElement = createTweetElement(tweet, tweetCount);
+                timeline.appendChild(tweetElement);
+                tweetCount++;
+            });
+            
+            updateStats();
+            
+            // Scroll to show new content
+            setTimeout(() => {
+                window.scrollTo({
+                    top: document.body.scrollHeight - window.innerHeight,
+                    behavior: 'smooth'
+                });
+            }, 100);
+        }
+
+        function generateRandomTweets(count) {
+            const users = ['TechGuru', 'NewsBot', 'FactChecker', 'DataAnalyst', 'AIExpert', 'InfoVerify'];
+            const topics = [
+                'New research shows that AI verification systems are becoming more accurate',
+                'Breaking: Major social media platform implements new fact-checking features',
+                'Study reveals 78% improvement in content authenticity detection',
+                'Experts warn about the rise of sophisticated misinformation campaigns',
+                'Revolutionary blockchain-based content verification system launched',
+                'Scientists develop new algorithm for detecting deepfake content'
+            ];
+            
+            const tweets = [];
+            for (let i = 0; i < count; i++) {
+                const user = users[Math.floor(Math.random() * users.length)];
+                const topic = topics[Math.floor(Math.random() * topics.length)];
+                tweets.push({
+                    username: user,
+                    handle: `@${user.toLowerCase()}`,
+                    content: topic,
+                    timestamp: `${Math.floor(Math.random() * 24)}h`,
+                    retweets: Math.floor(Math.random() * 500),
+                    likes: Math.floor(Math.random() * 1000),
+                    replies: Math.floor(Math.random() * 100)
+                });
+            }
+            return tweets;
+        }
+
+        function simulateGraphQLCall() {
+            apiCallCount++;
+            
+            // Simulate the X.com GraphQL API response
+            const mockApiResponse = {
+                data: {
+                    home: {
+                        home_timeline_urt: {
+                            instructions: [
+                                {
+                                    type: "TimelineAddEntries",
+                                    entries: generateMockTimelineEntries()
+                                }
+                            ]
+                        }
+                    }
+                }
+            };
+
+            // Simulate fetch call to GraphQL endpoint
+            const mockUrl = 'https://x.com/i/api/graphql/DXmgQYmIft1oLP6vMkJixw/HomeTimeline';
+            
+            console.log('🔄 Simulating GraphQL API call:', mockUrl);
+            console.log('📊 Mock API Response:', mockApiResponse);
+            
+            // Trigger custom event for extension to intercept
+            window.dispatchEvent(new CustomEvent('mockGraphQLResponse', {
+                detail: {
+                    url: mockUrl,
+                    response: mockApiResponse,
+                    timestamp: Date.now()
+                }
+            }));
+
+            document.getElementById('dataIntercepted').textContent = 'Yes';
+        }
+
+        function generateMockTimelineEntries() {
+            const entries = [];
+            const newTweets = generateRandomTweets(3);
+            
+            newTweets.forEach((tweet, index) => {
+                entries.push({
+                    content: {
+                        entryType: "TimelineTimelineItem",
+                        itemContent: {
+                            itemType: "TimelineTweet",
+                            tweet_results: {
+                                result: {
+                                    legacy: {
+                                        id_str: `${Date.now()}_${index}`,
+                                        full_text: tweet.content,
+                                        created_at: new Date().toISOString(),
+                                        retweet_count: tweet.retweets,
+                                        favorite_count: tweet.likes,
+                                        reply_count: tweet.replies,
+                                        quote_count: Math.floor(Math.random() * 50),
+                                        entities: {
+                                            urls: [],
+                                            hashtags: [],
+                                            user_mentions: []
+                                        }
+                                    },
+                                    core: {
+                                        user_results: {
+                                            result: {
+                                                legacy: {
+                                                    id_str: `user_${index}`,
+                                                    screen_name: tweet.handle.replace('@', ''),
+                                                    name: tweet.username,
+                                                    verified: Math.random() > 0.7,
+                                                    followers_count: Math.floor(Math.random() * 100000)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+            
+            return entries;
+        }
+
+        function updateStats() {
+            document.getElementById('apiCallCount').textContent = apiCallCount;
+            document.getElementById('tweetCount').textContent = tweetCount;
+            document.getElementById('scrollCount').textContent = scrollCount;
+        }
+
+        // Scroll monitoring
+        window.addEventListener('scroll', () => {
+            const currentScrollY = window.scrollY;
+            const scrollDelta = currentScrollY - lastScrollY;
+            
+            if (Math.abs(scrollDelta) > 50) {
+                scrollCount++;
+                lastScrollY = currentScrollY;
+                updateStats();
+            }
+            
+            // Update scroll indicator
+            document.getElementById('scrollIndicator').textContent = `Scroll: ${Math.round(currentScrollY)}px`;
+            
+            // Simulate API call on significant scroll
+            if (scrollDelta > 200 && Math.random() > 0.7) {
+                setTimeout(() => {
+                    simulateGraphQLCall();
+                }, 500);
+            }
+        });
+
+        // Auto-scroll simulation
+        function startAutoScroll() {
+            setInterval(() => {
+                if (Math.random() > 0.8) {
+                    window.scrollBy({
+                        top: 100 + Math.random() * 200,
+                        behavior: 'smooth'
+                    });
+                }
+            }, 3000);
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeTweets();
+            
+            // Start auto-scroll after 5 seconds
+            setTimeout(startAutoScroll, 5000);
+            
+            console.log('🐦 X.com Test Page initialized');
+            console.log('📱 Extension should intercept API calls on this page');
+        });
+
+        // Listen for extension messages
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'EXTENSION_LOADED') {
+                console.log('✅ Content Verifier Extension detected');
+                document.getElementById('dataIntercepted').textContent = 'Extension Ready';
+            }
+        });
+    </script>
+</body>
+</html>
