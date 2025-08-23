@@ -12,4 +12,6 @@ wheels/
 # misc
 psnl
 
-
+**/node_modules
+.DS_Store
+.vscode
