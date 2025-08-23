@@ -2,6 +2,8 @@ import requests
 import json
 import os
 
+from utils.helper import extract_fact_check_final
+
 async def classify_fact_check(feedback: str) -> str:
     """
     Calls the LM Studio API to classify Google Fact Check API feedback.
@@ -42,8 +44,6 @@ async def classify_fact_check(feedback: str) -> str:
     }
 
     response = requests.post(url, headers=headers, data=json.dumps(payload))
+    final_response = extract_fact_check_final(response)
     
-    if response.status_code == 200:
-        return response.json()["choices"][0]["message"]["content"]
-    else:
-        raise Exception(f"Request failed: {response.status_code} {response.text}")
+    return final_response
