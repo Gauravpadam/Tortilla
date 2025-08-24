@@ -11,6 +11,9 @@ from DTO.Article import ArticlesBlob
 from service.ArticleParser import ArticleParser
 
 
+# ----------------------------
+# Controller
+# ----------------------------
 class AnalysisController(BaseController):
 
     def __init__(self, prefix="analysis", tags=["analysisapi"]):
@@ -26,6 +29,15 @@ class AnalysisController(BaseController):
         self.controller.add_api_route(path='/ingest-scroll/last', endpoint=self.get_last_ingests, methods=['get'])
         return self.controller
 
+    # ----------------------------
+    # Endpoints
+    # ----------------------------
+    def article_analysis(self, req: ArticleRequest):
+        """
+        Analyze full article text passed in request body
+        """
+        res = article_analysis_service(article=req.article)
+        return res
 
     async def classify_truth(self):
         return await self.agentService.classify_input("foo")
