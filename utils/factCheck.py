@@ -34,7 +34,7 @@ def parse_factcheck_response(response):
     
 
 def fact_check_api(claim_text: str, language: str = "en"):
-    api_key = "AIzaSyCwjsgX-TDUkhimGSebeOkYVd85sbYYBP4"
+    api_key = "Sample API"
     if not api_key:
         raise RuntimeError(
             "Missing API key. Set env var GOOGLE_FACTCHECK_API_KEY to your Google API key."
