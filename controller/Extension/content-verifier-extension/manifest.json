@@ -8,7 +8,6 @@
     "storage",
     "scripting",
     "webRequest",
-    "webRequestFilter",
     "downloads"
   ],
   "host_permissions": [

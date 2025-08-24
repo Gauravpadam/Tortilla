@@ -18,6 +18,7 @@ class ContentVerifier {
     console.log('Content Verifier initialized for:', this.currentUrl);
     
     this.setupMessageListeners();
+    this.setupPageBridgeListener();
     this.setupDOMObserver();
     this.extractInitialContent();
     this.createSidebar();
@@ -48,6 +49,33 @@ class ContentVerifier {
           break;
         default:
           console.log('Unknown message type:', message.type);
+      }
+    });
+  }
+
+  // Bridge messages from the page context (e.g., injected scripts) to the extension context
+  setupPageBridgeListener() {
+    window.addEventListener('message', async (e) => {
+      try {
+        const data = e?.data;
+        if (!data || data.type !== 'TIMELINE_DATA') return;
+
+        // Perform backend call from content script (not blocked by page CSP)
+        const resp = await fetch('http://127.0.0.1:8000/api/analysis/ingest-scroll?debug=1', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          // Backend accepts dict or string for json_blob; pass the object directly
+          body: JSON.stringify({ json_blob: data.payload })
+        });
+
+        const result = await resp.json();
+        console.log('Analysis result from backend:', result);
+
+        // Optionally forward result back to the page if needed
+        window.postMessage({ type: 'ANALYSIS_RESULT', payload: result }, '*');
+      } catch (err) {
+        console.error('Error sending timeline to backend:', err);
+        window.postMessage({ type: 'ANALYSIS_RESULT', error: String(err) }, '*');
       }
     });
   }

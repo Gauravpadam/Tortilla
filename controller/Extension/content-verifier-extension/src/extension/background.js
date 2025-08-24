@@ -1,16 +1,47 @@
 // Background Service Worker for Content Verifier Extension
 // Handles communication, network monitoring, and verification requests
 
-// Import X.com data storage service
-importScripts('src/backend/xcom-data-storage.js');
+// Try to import X.com data storage service (use absolute URL for MV3)
+try {
+  const storageUrl = chrome.runtime.getURL('src/backend/xcom-data-storage.js');
+  importScripts(storageUrl);
+} catch (error) {
+  console.warn('Could not load xcom-data-storage.js:', error);
+}
 
 class BackgroundServiceWorker {
   constructor() {
     this.verificationQueue = [];
     this.isProcessing = false;
-    this.apiEndpoint = 'http://localhost:3000/api/verify'; // Will be configurable
-    this.xcomDataStorage = new XComDataStorage();
+    this.apiEndpoint = '';
+    
+    // Initialize XComDataStorage if available
+    try {
+      this.xcomDataStorage = typeof XComDataStorage !== 'undefined' ? new XComDataStorage() : null;
+    } catch (error) {
+      console.warn('XComDataStorage not available:', error);
+      this.xcomDataStorage = null;
+    }
     this.init();
+  }
+
+  async postToIngestBackend(timelineJson) {
+    try {
+      const resp = await fetch('http://127.0.0.1:8000/api/analysis/ingest-scroll?debug=1', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ json_blob: timelineJson })
+      });
+      // Best-effort; log but do not throw on non-OK to avoid spamming console
+      if (!resp.ok) {
+        console.warn('Ingest backend returned non-OK:', resp.status, resp.statusText);
+        return;
+      }
+      const result = await resp.json();
+      console.log('Ingest backend result:', { count: result?.count, sample: result?.debug?.sample_articles });
+    } catch (err) {
+      console.warn('Error posting to ingest backend:', err);
+    }
   }
 
   init() {
@@ -23,37 +54,48 @@ class BackgroundServiceWorker {
   setupMessageListeners() {
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       console.log('Background received message:', request);
-      
+      // Only keep the channel open if we will respond asynchronously
+      let keepChannelOpen = false;
+
       switch (request.type) {
         case 'CONTENT_EXTRACTED':
-          this.handleContentExtraction(request.data, sender.tab.id);
+          this.handleContentExtraction(request.data, sender.tab?.id);
+          keepChannelOpen = false; // no sendResponse expected
           break;
         case 'VERIFICATION_REQUEST':
           this.handleVerificationRequest(request.data, sendResponse);
+          keepChannelOpen = true; // will respond async
           break;
         case 'USER_REPORT':
           this.handleUserReport(request.data, sendResponse);
+          keepChannelOpen = true; // will respond async
           break;
         case 'GET_VERIFICATION_STATUS':
           this.getVerificationStatus(request.url, sendResponse);
+          keepChannelOpen = true; // will respond async
           break;
         case 'XCOM_DATA_EXTRACTED':
           this.handleXComDataExtracted(request.data, sendResponse);
+          keepChannelOpen = true; // will respond async
           break;
         case 'GET_XCOM_STATS':
           this.getXComStats(sendResponse);
+          keepChannelOpen = true; // will respond async
           break;
         case 'EXPORT_XCOM_DATA':
           this.exportXComData(sendResponse);
+          keepChannelOpen = true; // will respond async
           break;
         case 'CLEAR_XCOM_DATA':
           this.clearXComData(sendResponse);
+          keepChannelOpen = true; // will respond async
           break;
         default:
           console.warn('Unknown message type:', request.type);
+          keepChannelOpen = false;
       }
-      
-      return true; // Keep message channel open for async response
+
+      return keepChannelOpen;
     });
   }
 
@@ -104,6 +146,11 @@ class BackgroundServiceWorker {
   async handleContentExtraction(contentData, tabId) {
     try {
       console.log('Processing extracted content for tab:', tabId);
+      // Skip verification if API endpoint is not configured
+      if (!this.apiEndpoint) {
+        console.log('Verification disabled: no API endpoint configured');
+        return;
+      }
       
       // Add to verification queue
       this.verificationQueue.push({
@@ -135,6 +182,14 @@ class BackgroundServiceWorker {
 
   async processVerificationQueue() {
     if (this.verificationQueue.length === 0) {
+      this.isProcessing = false;
+      return;
+    }
+
+    // If API endpoint is not configured, drain queue without processing
+    if (!this.apiEndpoint) {
+      console.log('Skipping verification processing: no API endpoint configured');
+      this.verificationQueue = [];
       this.isProcessing = false;
       return;
     }
@@ -190,6 +245,10 @@ class BackgroundServiceWorker {
 
   async handleVerificationRequest(data, sendResponse) {
     try {
+      if (!this.apiEndpoint) {
+        sendResponse({ success: false, error: 'API endpoint not configured' });
+        return;
+      }
       const response = await this.sendToBackend({
         type: 'SINGLE_VERIFICATION',
         data: data
@@ -228,6 +287,9 @@ class BackgroundServiceWorker {
 
   async sendToBackend(payload) {
     try {
+      if (!this.apiEndpoint) {
+        throw new Error('API endpoint not configured');
+      }
       const response = await fetch(this.apiEndpoint, {
         method: 'POST',
         headers: {
@@ -255,14 +317,32 @@ class BackgroundServiceWorker {
         tweetCount: data.extractedData?.totalCount || 0
       });
       
-      // Store the data using X.com data storage service
-      await this.xcomDataStorage.storeData(data);
-      
-      sendResponse({ 
-        success: true, 
-        message: 'X.com data stored successfully',
-        stats: await this.xcomDataStorage.getStorageStats()
-      });
+      // Store the data using X.com data storage service if available
+      if (this.xcomDataStorage) {
+        await this.xcomDataStorage.storeData(data);
+        const stats = await this.xcomDataStorage.getStorageStats();
+        sendResponse({ 
+          success: true, 
+          message: 'X.com data stored successfully',
+          stats: stats
+        });
+      } else {
+        sendResponse({ 
+          success: true, 
+          message: 'X.com data received (storage service not available)',
+          stats: null
+        });
+      }
+
+      // Fallback path: also forward raw timeline JSON to backend ingest endpoint.
+      // This ensures ingest works even if the page bridge misses messages.
+      try {
+        if (data && data.rawTimeline) {
+          await this.postToIngestBackend(data.rawTimeline);
+        }
+      } catch (e) {
+        console.warn('Failed to forward raw timeline to ingest backend:', e);
+      }
       
     } catch (error) {
       console.error('Error handling X.com data:', error);
@@ -275,8 +355,12 @@ class BackgroundServiceWorker {
 
   async getXComStats(sendResponse) {
     try {
-      const stats = await this.xcomDataStorage.getStorageStats();
-      sendResponse({ success: true, data: stats });
+      if (this.xcomDataStorage) {
+        const stats = await this.xcomDataStorage.getStorageStats();
+        sendResponse({ success: true, data: stats });
+      } else {
+        sendResponse({ success: false, error: 'XCom storage service not available' });
+      }
     } catch (error) {
       console.error('Error getting X.com stats:', error);
       sendResponse({ success: false, error: error.message });
@@ -285,8 +369,12 @@ class BackgroundServiceWorker {
 
   async exportXComData(sendResponse) {
     try {
-      const result = await this.xcomDataStorage.exportCurrentBuffer();
-      sendResponse({ success: true, data: result });
+      if (this.xcomDataStorage) {
+        const result = await this.xcomDataStorage.exportCurrentBuffer();
+        sendResponse({ success: true, data: result });
+      } else {
+        sendResponse({ success: false, error: 'XCom storage service not available' });
+      }
     } catch (error) {
       console.error('Error exporting X.com data:', error);
       sendResponse({ success: false, error: error.message });
@@ -295,8 +383,12 @@ class BackgroundServiceWorker {
 
   async clearXComData(sendResponse) {
     try {
-      await this.xcomDataStorage.clearAllData();
-      sendResponse({ success: true, message: 'All X.com data cleared' });
+      if (this.xcomDataStorage) {
+        await this.xcomDataStorage.clearAllData();
+        sendResponse({ success: true, message: 'All X.com data cleared' });
+      } else {
+        sendResponse({ success: false, error: 'XCom storage service not available' });
+      }
     } catch (error) {
       console.error('Error clearing X.com data:', error);
       sendResponse({ success: false, error: error.message });
@@ -305,6 +397,10 @@ class BackgroundServiceWorker {
 
   notifyContentScript(tabId, message) {
     try {
+      if (typeof tabId !== 'number' || tabId < 0) {
+        console.warn('Skipping sendMessage: invalid tabId', tabId, message?.type);
+        return;
+      }
       chrome.tabs.sendMessage(tabId, message).catch(error => {
         console.warn(`Failed to send message to tab ${tabId}:`, error);
       });
@@ -324,7 +420,7 @@ chrome.runtime.onInstalled.addListener((details) => {
     
     // Set default configuration
     chrome.storage.local.set({
-      apiEndpoint: 'http://localhost:3000/api/verify',
+      apiEndpoint: '',
       autoVerify: true,
       showBadges: true,
       showSidebar: true

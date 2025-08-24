@@ -158,7 +158,9 @@ class XComDataInterceptor {
           scrollPosition: window.scrollY,
           apiCallNumber: this.apiCallCount,
           extractedData: extractedData,
-          rawDataSize: JSON.stringify(data).length
+          rawDataSize: JSON.stringify(data).length,
+          // Include raw timeline JSON so background can forward to backend
+          rawTimeline: data
         };
         
         this.interceptedData.push(interceptedEntry);
@@ -166,6 +168,9 @@ class XComDataInterceptor {
         
         // Send to background script for file storage
         this.sendDataToBackground(interceptedEntry);
+        
+        // Send to content script for backend analysis
+        this.sendToAnalysisBackend(data);
         
         // Process tweets for content verification if needed
         this.processTweetsForVerification(extractedData.tweets);
@@ -575,6 +580,21 @@ class XComDataInterceptor {
       stats: this.getStats(),
       exportedAt: Date.now()
     };
+  }
+
+  sendToAnalysisBackend(timelineData) {
+    try {
+      console.log('📤 Sending timeline data to analysis backend via content script');
+      
+      // Send message to content script which will forward to backend
+      window.postMessage({ 
+        type: 'TIMELINE_DATA', 
+        payload: timelineData 
+      }, '*');
+      
+    } catch (error) {
+      console.error('❌ Error sending data to analysis backend:', error);
+    }
   }
 }
 
