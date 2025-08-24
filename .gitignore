@@ -8,3 +8,12 @@ wheels/
 
 # Virtual environments
 .venv
+
+# misc
+psnl
+
+**/node_modules
+.DS_Store
+.vscode
+
+.env

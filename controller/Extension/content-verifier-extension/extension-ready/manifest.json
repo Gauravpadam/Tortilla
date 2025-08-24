@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "X.com Data Interceptor",
+  "version": "1.0.0",
+  "description": "Intercepts X.com API calls and saves timeline data to files",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "downloads",
+    "downloads.open",
+    "downloads.shelf"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "page-hooks.js"
+      ],
+      "matches": [
+        "*://x.com/*",
+        "*://*.x.com/*",
+        "*://twitter.com/*",
+        "*://*.twitter.com/*"
+      ]
+    }
+  ],
+  "content_scripts": [
+    {
+      "matches": ["*://x.com/*", "*://twitter.com/*", "*://*.x.com/*", "*://*.twitter.com/*"],
+      "js": ["xcom-interceptor.js"],
+      "run_at": "document_start",
+      "all_frames": false
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "X.com Data Interceptor"
+  }
+}
