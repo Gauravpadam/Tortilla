@@ -199,7 +199,9 @@ class XComDataInterceptor {
           scrollPosition: window.scrollY,
           apiCallNumber: this.apiCallCount,
           extractedData: extractedData,
-          rawDataSize: JSON.stringify(data).length
+          rawDataSize: JSON.stringify(data).length,
+          // Add raw timeline for backend forwarding
+          rawTimeline: data
         };
         
         this.interceptedData.push(interceptedEntry);

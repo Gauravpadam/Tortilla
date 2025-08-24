@@ -151,21 +151,18 @@ class XComDataStorage {
 
   async saveToFile(fileName, content) {
     try {
-      // Create a blob with the content
-      const blob = new Blob([content], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      
+      // Use a Data URL for compatibility with MV3 service workers
+      // Convert content (string) to Base64 data URL
+      const dataUrl = `data:application/json;charset=utf-8;base64,${btoa(unescape(encodeURIComponent(content)))}`;
+
       // Use chrome.downloads API to save the file
       const downloadId = await chrome.downloads.download({
-        url: url,
+        url: dataUrl,
         filename: `${this.storageDirectory}/${fileName}`,
         saveAs: false // Don't prompt user, save directly
       });
-      
+
       console.log('File saved with download ID:', downloadId);
-      
-      // Clean up the blob URL
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
       
       // Update storage statistics
       await this.updateStorageStats(fileName, content.length);
@@ -218,13 +215,15 @@ class XComDataStorage {
       }
     }, 10 * 60 * 1000);
     
-    // Also flush on page unload
-    window.addEventListener('beforeunload', () => {
-      if (this.dataBuffer.length > 0) {
-        // Synchronous flush for page unload
-        this.flushBufferToFile();
-      }
-    });
+    // Also flush on page unload (only if window exists; not in service worker)
+    if (typeof window !== 'undefined' && window.addEventListener) {
+      window.addEventListener('beforeunload', () => {
+        if (this.dataBuffer.length > 0) {
+          // Synchronous flush for page unload
+          this.flushBufferToFile();
+        }
+      });
+    }
   }
 
   async getStorageStats() {
@@ -286,9 +285,18 @@ class XComDataStorage {
   }
 }
 
-// Export for use in other modules
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = XComDataStorage;
-} else if (typeof window !== 'undefined') {
+// Export for use in other modules and expose on both window and worker scopes
+try {
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = XComDataStorage;
+  }
+} catch (_) {}
+
+if (typeof self !== 'undefined') {
+  // service worker or worker
+  self.XComDataStorage = XComDataStorage;
+}
+
+if (typeof window !== 'undefined') {
   window.XComDataStorage = XComDataStorage;
 }

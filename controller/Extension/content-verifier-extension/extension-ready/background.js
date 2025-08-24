@@ -5,7 +5,7 @@
 class XComDataStorage {
   constructor() {
     this.dataBuffer = [];
-    this.maxBufferSize = 5; // Save after 5 buffered entries for quick testing
+    this.maxBufferSize = 1; // Save after every entry to guarantee downloads
     this.fileCounter = 1;
     this.currentSession = Date.now();
   }
@@ -79,20 +79,54 @@ class XComDataStorage {
     return JSON.stringify(fileData, null, 2);
   }
 
-  async saveToFile(fileName, content) {
+  async saveToFile(_, content) {
     try {
-      // Use a UTF-8 data URL to ensure compatibility in MV3 service worker context
+      // Create a unique filename with timestamp
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const fileName = `xcom-data-${timestamp}.json`;
+      
+      // Create a data URL for the file
       const dataUrl = `data:application/json;charset=utf-8,${encodeURIComponent(content)}`;
       
-      const downloadId = await chrome.downloads.download({
-        url: dataUrl,
-        filename: `xcom-data/${fileName}`,
-        saveAs: false
-      });
+      // Create a downloads directory if it doesn't exist
+      try {
+        await chrome.downloads.setShelfEnabled(false);
+      } catch (e) {
+        console.log('Could not disable download shelf:', e);
+      }
       
-      console.log('File saved with download ID:', downloadId);
+      // Save the file using Chrome's download API
+      try {
+        const downloadId = await chrome.downloads.download({
+          url: dataUrl,
+          filename: `xcom-data/${fileName}`,
+          saveAs: false,
+          conflictAction: 'uniquify',
+          method: 'GET'
+        });
+        
+        console.log('File queued for download with ID:', downloadId);
+        
+        // Set up a listener to confirm the download completed
+        const onChanged = (delta) => {
+          if (delta.id === downloadId && (delta.state && delta.state.current === 'complete' || delta.state === 'complete')) {
+            console.log('Download completed successfully:', downloadId);
+            chrome.downloads.onChanged.removeListener(onChanged);
+          } else if (delta.error) {
+            console.error('Download error:', delta.error);
+            chrome.downloads.onChanged.removeListener(onChanged);
+          }
+        };
+        
+        chrome.downloads.onChanged.addListener(onChanged);
+        
+        return downloadId;
+      } catch (error) {
+        console.error('Error initiating download:', error);
+        throw error;
+      }
     } catch (error) {
-      console.error('Error saving file:', error);
+      console.error('Error in saveToFile:', error);
       throw error;
     }
   }
@@ -126,6 +160,14 @@ class BackgroundServiceWorker {
         case 'XCOM_DATA_EXTRACTED':
           console.log('[DEBUG] Storing data received from content script.');
           this.xcomDataStorage.storeData(request.data);
+          // Force immediate flush to ensure a file is downloaded
+          this.xcomDataStorage.flushBufferToFile();
+          // Fallback: forward raw timeline to backend ingest
+          if (request?.data?.rawTimeline) {
+            this.postToIngestBackend(request.data.rawTimeline).catch(err => {
+              console.warn('Failed to post rawTimeline to ingest backend:', err);
+            });
+          }
           sendResponse({ success: true, message: 'Data received for buffering.' });
           break;
         case 'FORCE_EXPORT_DATA':
@@ -145,6 +187,24 @@ class BackgroundServiceWorker {
       
       return true;
     });
+  }
+
+  async postToIngestBackend(timelineJson) {
+    try {
+      const resp = await fetch('http://127.0.0.1:8000/api/analysis/ingest-scroll?debug=1', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ json_blob: timelineJson })
+      });
+      if (!resp.ok) {
+        console.warn('Ingest backend returned non-OK:', resp.status, resp.statusText);
+        return;
+      }
+      const result = await resp.json();
+      console.log('[Ingest] Result:', { count: result?.count, sample: result?.debug?.sample_articles });
+    } catch (err) {
+      console.warn('Error posting to ingest backend:', err);
+    }
   }
 
   async handleXComDataExtracted(data, sendResponse) {
